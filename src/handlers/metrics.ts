@@ -1,49 +1,21 @@
-import { Request, Response } from 'express'
-import { BooksProvider } from '../providers/books.ts'
-import { Book } from '../models/book.ts'
+import { Request, Response } from 'express';
+import { ApiBooksProvider } from '../providers/ApiBooksProvider'; 
+import { MetricsService } from '../services/MetricsService';  
 
-interface GetMetricsQuery {
-  author?: string
-}
+const getMetrics = async (req: Request, res: Response) => {
+  try {
+    const booksProvider = new ApiBooksProvider();
+    const metricsService = new MetricsService(booksProvider);
 
-const metricsHandler = (metricsProvider: BooksProvider) => {
+    const authorFilter = (req.query.author as string) || '';
+    
+    const metrics = await metricsService.getMetrics(authorFilter);
 
-  const get = async (req: Request<{}, {}, {}, GetMetricsQuery>, res: Response<any>) => {
+    return res.status(200).json(metrics);
 
-    const { author } = req.query
-    const books = metricsProvider.getBooks()
-
-    const meanUnitsSold = getMeanUnitsSold(books)
-    const cheapestBook = getCheapestBook(books)
-    const booksWrittenByAuthor = author ? getBooksWrittenByAuthor(books, author) : []
-
-    res.status(200).json({
-      mean_units_sold: meanUnitsSold,
-      cheapest_book: cheapestBook,
-      books_written_by_author: booksWrittenByAuthor,
-    })
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal Server Error' });
   }
+};
 
-  return {
-    get,
-  }
-}
-
-const getMeanUnitsSold: any = (books: Book[]) => {
-  if (books.length === 0) return 0
-  const totalUnitsSold = books.reduce((sum, book) => sum + book.unitsSold, 0)
-  return totalUnitsSold / books.length
-}
-
-const getCheapestBook: any = (books: Book[]) => {
-  if (books.length === 0) return null
-  return books.reduce((cheapest, book) => {
-    return book.price < cheapest.price ? book : cheapest
-  }, books[0])
-}
-
-const getBooksWrittenByAuthor: any = (books: Book[], author: string) => {
-  return books.filter(book => book.author.toLowerCase() === author.toLowerCase())
-}
-
-export default metricsHandler
+export default getMetrics;

@@ -1,61 +1,75 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import metricsHandler from './metrics'
-import { Request, Response } from 'express'
-import { BooksProvider } from '../providers/books'
-import { Book } from '../models/book'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import getMetrics from './metrics'; 
+import { Request, Response } from 'express';
+
+const mockBooks = [
+  { id: '1', name: 'Book 1', author: 'Author 1', unitsSold: 100, price: 20 },
+  { id: '2', name: 'Book 2', author: 'Author 2', unitsSold: 200, price: 15 },
+  { id: '3', name: 'Book 3', author: 'Author 1', unitsSold: 300, price: 25 }
+];
+
+const mockGetBooks = vi.fn();
+
+vi.mock('../providers/ApiBooksProvider', () => {
+  return {
+    ApiBooksProvider: vi.fn().mockImplementation(() => {
+      return {
+        getBooks: mockGetBooks
+      };
+    })
+  };
+});
 
 describe('metricsHandler', () => {
-  // Mock data
-  const mockBooks: Book[] = [
-    { id: 1, name: 'Book 1', author: 'Author 1', unitsSold: 100, price: 20 },
-    { id: 2, name: 'Book 2', author: 'Author 2', unitsSold: 200, price: 15 },
-    { id: 3, name: 'Book 3', author: 'Author 1', unitsSold: 300, price: 25 }
-  ]
-
-  // Mock BooksProvider
-  const mockBooksProvider: BooksProvider = {
-    getBooks: vi.fn().mockReturnValue(mockBooks)
-  }
-
-  // Set up handler with mock provider
-  const handler = metricsHandler(mockBooksProvider)
-
-  // Mock request and response
-  let mockReq: Partial<Request>
-  let mockRes: Partial<Response>
-  let jsonMock: any
+  let mockReq: Partial<Request>;
+  let mockRes: Partial<Response>;
+  let jsonMock: any;
+  let statusMock: any;
 
   beforeEach(() => {
-    jsonMock = vi.fn()
+    mockGetBooks.mockResolvedValue(mockBooks);
+
+    jsonMock = vi.fn();
+    statusMock = vi.fn().mockReturnThis(); 
+    
     mockRes = {
-      status: vi.fn().mockReturnThis(),
+      status: statusMock,
       json: jsonMock
-    }
+    };
+
     mockReq = {
       query: {}
-    }
-  })
+    };
+    
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
 
-  describe('get', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('getMetrics', () => {
     it('should return metrics with empty author query', async () => {
-      await handler.get(mockReq as any, mockRes as any)
+      await getMetrics(mockReq as Request, mockRes as Response);
 
-      expect(mockBooksProvider.getBooks).toHaveBeenCalled()
-      expect(mockRes.status).toHaveBeenCalledWith(200)
+      expect(mockGetBooks).toHaveBeenCalledTimes(1);
+      expect(statusMock).toHaveBeenCalledWith(200);
+      
       expect(jsonMock).toHaveBeenCalledWith({
-        mean_units_sold: 200,
-        cheapest_book: mockBooks[1],
-        books_written_by_author: []
-      })
-    })
+        mean_units_sold: 200, 
+        cheapest_book: mockBooks[1], 
+        books_written_by_author: [] 
+      });
+    });
 
     it('should return metrics with author query', async () => {
-      mockReq.query = { author: 'Author 1' }
+      mockReq.query = { author: 'Author 1' };
 
-      await handler.get(mockReq as any, mockRes as any)
+      await getMetrics(mockReq as Request, mockRes as Response);
 
-      expect(mockBooksProvider.getBooks).toHaveBeenCalled()
-      expect(mockRes.status).toHaveBeenCalledWith(200)
+      expect(mockGetBooks).toHaveBeenCalled();
+      expect(statusMock).toHaveBeenCalledWith(200);
+
       expect(jsonMock).toHaveBeenCalledWith({
         mean_units_sold: 200,
         cheapest_book: mockBooks[1],
@@ -63,7 +77,18 @@ describe('metricsHandler', () => {
           mockBooks[0],
           mockBooks[2]
         ]
-      })
-    })
-  })
-})
+      });
+    });
+
+    it('should handle errors and return 500', async () => {
+      mockGetBooks.mockRejectedValue(new Error('API Error'));
+
+      await getMetrics(mockReq as Request, mockRes as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(500);
+      expect(jsonMock).toHaveBeenCalledWith({ 
+        message: 'Internal Server Error' 
+      });
+    });
+  });
+});

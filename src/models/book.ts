@@ -2,6 +2,6 @@ export interface Book {
   id: string
   name: string
   author: string
-  unitsSold: number
+  unitsSold: number 
   price: number
 }

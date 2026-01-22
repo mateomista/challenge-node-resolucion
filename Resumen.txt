@@ -1,0 +1,19 @@
+Conversacion con la IA:
+
+https://gemini.google.com/share/2dcb9900ba4d
+
+CAMBIOS IMPLEMENTADOS
+---------------------
+1. Arquitectura: Refactorización a un diseño en capas (Handler -> Service -> Provider) utilizando Inyección de Dependencias y Async/Await.
+2. Integración: Creación de 'ApiBooksProvider' para consumir la API externa, incluyendo el mapeo de datos (Adapter) de snake_case a camelCase y corrección de tipos.
+3. Testing: Tests unitarios reescritos con Vitest, utilizando 'vi.mock' para aislar la lógica y no depender de la API real.
+4. Seguridad: Implementación básica de Helmet y CORS.
+
+MEJORAS FUTURAS 
+---------------------------------------
+Para llevar este proyecto a un nivel de producción, podría agregar:
+
+1. Validación de Datos (Zod): Para validar que la respuesta de la API externa cumpla con el esquema esperado en tiempo de ejecución.
+2. Observabilidad: Reemplazar console.log por logs estructurados (Winston/Pino) y agregar métricas de latencia/errores.
+3. Resiliencia y Performance: Implementar Circuit Breaker (para fallos de la API externa) y Caching (Redis).
+4. Seguridad Avanzada: Rate Limiting para evitar abusos y validación estricta de variables de entorno.
