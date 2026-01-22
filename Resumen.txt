@@ -17,3 +17,18 @@ Para llevar este proyecto a un nivel de producción, podría agregar:
 2. Observabilidad: Reemplazar console.log por logs estructurados (Winston/Pino) y agregar métricas de latencia/errores.
 3. Resiliencia y Performance: Implementar Circuit Breaker (para fallos de la API externa) y Caching (Redis).
 4. Seguridad Avanzada: Rate Limiting para evitar abusos y validación estricta de variables de entorno.
+
+INSTRUCCIONES DE EJECUCION
+--------------------------
+1. Instalar dependencias:
+   npm install
+
+2. Compilar el proyecto (Genera la carpeta /dist):
+   npm run build
+
+3. Iniciar el servidor (Production mode):
+   npm start
+   > El servidor estará disponible en: http://localhost:3000
+
+4. Correr los tests unitarios:
+   npm test
